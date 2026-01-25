@@ -43,7 +43,8 @@ class TELUSAIService:
         current_mood: Dict[str, Any],
         mood_history: List[Dict[str, Any]],
         patterns: Dict[str, Any],
-        is_crisis: bool = False
+        is_crisis: bool = False,
+        user_text: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Generate personalized recommendation using gemma-3-27b
@@ -52,6 +53,8 @@ class TELUSAIService:
             current_mood: Current mood analysis
             mood_history: Recent mood history
             patterns: Identified mood patterns
+            is_crisis: Whether this is a crisis situation
+            user_text: The actual user message (for context-aware recommendations)
             
         Returns:
             Personalized recommendation with title, description, and priority
@@ -73,6 +76,8 @@ class TELUSAIService:
             if is_crisis:
                 prompt = f"""You are a compassionate mental health AI assistant. This is a CRISIS SITUATION requiring immediate support.
 
+User's Message: "{user_text if user_text else 'Not provided'}"
+
 Current Mood:
 - Mood Score: {mood_score}/10
 - Sentiment: {sentiment}
@@ -89,7 +94,12 @@ Provide a brief (2-3 sentences), empathetic recommendation focused on immediate 
 
 Recommendation:"""
             else:
-                prompt = f"""You are a compassionate mental health AI assistant. Based on the following user data, provide a personalized, empathetic recommendation.
+                # Include user's actual message for context-aware recommendations
+                user_context = f'\nUser\'s Message: "{user_text}"' if user_text else ""
+                
+                prompt = f"""You are a compassionate mental health AI assistant. Based on the following user data, provide a personalized, empathetic recommendation that is SPECIFIC to their situation.
+
+{user_context}
 
 Current Mood:
 - Mood Score: {mood_score}/10
@@ -100,7 +110,13 @@ Mood Patterns:
 - Trend: {trend}
 - Average Mood: {avg_mood:.1f}/10
 
-Provide a brief (2-3 sentences), supportive, and actionable recommendation. Be empathetic and specific. Focus on what the user can do right now to improve their wellbeing.
+IMPORTANT: Your recommendation should be SPECIFIC to what the user mentioned. For example:
+- If they mention exam anxiety → suggest study strategies, time management, test preparation tips
+- If they mention work stress → suggest work-life balance, task prioritization, boundary setting
+- If they mention relationship issues → suggest communication strategies, support resources
+- If they mention general anxiety → suggest grounding techniques, breathing exercises
+
+Provide a brief (2-3 sentences), supportive, and actionable recommendation that directly addresses their specific situation. Be empathetic and contextually relevant.
 
 Recommendation:"""
 

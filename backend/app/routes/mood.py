@@ -99,11 +99,13 @@ async def analyze_mood(request: MoodAnalysisRequest):
                 mood_history = mood_service.get_mood_history(request.user_id, days=14)
                 
                 # Generate AI recommendation (only for non-crisis situations)
+                # Pass user's text for context-aware recommendations
                 ai_rec = telus_ai_service.generate_personalized_recommendation(
                     current_mood=mood_analysis,
                     mood_history=mood_history,
                     patterns=patterns,
-                    is_crisis=False  # Non-crisis only
+                    is_crisis=False,  # Non-crisis only
+                    user_text=request.text  # Pass user's actual message for context
                 )
                 
                 # Add AI recommendation at the top
