@@ -4,6 +4,21 @@
 
 **An AI-powered mental health triage companion designed for the TELUS Health ecosystem, featuring privacy-first edge inference.**
 
+---
+
+## 👥 Team
+
+**Team Name**: WonderOfUs  
+**Members**:
+- **Ayoola Opere**
+- **Mujah Sokoro**
+
+**Hackathon**: TELUS Hackathon 2025 - AI at the Edge of Innovation  
+**Track**: AI + Healthcare & Wellness  
+**Theme**: Technology that heals and helps
+
+---
+
 [![Next.js](https://img.shields.io/badge/Next.js-14.2-black?logo=next.js)](https://nextjs.org/)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green?logo=fastapi)](https://fastapi.tiangolo.com/)
@@ -253,19 +268,6 @@ The application includes a demo data seeder that creates 14 days of realistic mo
 - HIPAA compliance certification
 - Scalable cloud deployment
 - EHR system integration
-
----
-
-## 👥 Team
-
-**Team Name**: WonderOfUs  
-**Members**:
-- Ayoola Opere
-- Mujah Sokoro
-
-**Hackathon**: TELUS Hackathon 2025 - AI at the Edge of Innovation  
-**Track**: AI + Healthcare & Wellness  
-**Theme**: Technology that heals and helps
 
 ---
 
