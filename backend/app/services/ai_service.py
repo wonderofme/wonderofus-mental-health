@@ -201,23 +201,24 @@ class AIService:
         SAFETY PROTOCOL: High-risk keywords automatically trigger HIGH risk level
         regardless of other factors. This ensures no crisis situations are missed.
         
+        The detection follows a tiered approach:
+        1. HIGH RISK: Immediate danger keywords (suicide, self-harm, etc.)
+        2. MEDIUM RISK: Distress indicators (hopeless, desperate, etc.)
+        3. LOW RISK: Based on mood analysis (very low scores, extreme emotions)
+        
         Args:
-            text: Input text
-            mood_analysis: Previous mood analysis results
+            text: User input text to analyze
+            mood_analysis: Previous mood analysis results containing sentiment and emotions
             
         Returns:
-            Crisis detection results with risk level and recommendations
+            Dict containing:
+                - risk_level: LOW, MEDIUM, HIGH, or CRITICAL
+                - indicators: List of detected crisis indicators
+                - requires_immediate_attention: Boolean for HIGH/CRITICAL risk
+                - resources: Appropriate crisis resources based on risk level
+                - ai_reasoning: (Optional) AI-generated reasoning from TELUS AI Factory
         """
-        import sys
-        print("\n" + "!"*80, flush=True)
-        print("!"*80, flush=True)
-        print("!!! detect_crisis_indicators FUNCTION CALLED !!!", flush=True)
-        print(f"!!! Text: '{text}' !!!", flush=True)
-        print("!"*80, flush=True)
-        print("!"*80 + "\n", flush=True)
-        sys.stdout.flush()
-        
-        # High-risk keywords that ALWAYS trigger HIGH risk level
+        # High-risk keywords that ALWAYS trigger HIGH risk level (safety-first)
         high_risk_keywords = [
             "suicide", "kill myself", "end it all", "ending it all", "not worth living",
             "want to die", "hurt myself", "self harm", "end my life",
@@ -238,31 +239,16 @@ class AIService:
         indicators = []
         detected_emotion_type = None
         
-        # DEBUG: Log the text being checked
-        logger.debug(f"Checking crisis indicators for text (first 100 chars): {text_lower[:100]}")
-        
         # SAFETY: Check high-risk keywords FIRST - these force HIGH risk
-        # Check longer phrases first to avoid partial matches
+        # Check longer phrases first to avoid partial matches (more specific = higher priority)
         matched_keyword = None
-        import sys
-        print(f"[CRISIS DETECTION] Starting keyword check. Text (first 100 chars): {text_lower[:100]}", flush=True)
-        print(f"[CRISIS DETECTION] Checking {len(high_risk_keywords)} keywords (sorted by length)...", flush=True)
-        sys.stdout.flush()
         for keyword in sorted(high_risk_keywords, key=len, reverse=True):
             if keyword in text_lower:
                 risk_level = "HIGH"
                 matched_keyword = keyword
                 indicators.append(f"CRITICAL: Contains high-risk keyword: '{keyword}'")
-                logger.warning(f"CRISIS DETECTED: Keyword '{keyword}' found in text. Risk level set to HIGH.")
-                print(f"[CRISIS DETECTION] *** MATCHED *** Keyword '{keyword}' found! Setting risk_level to HIGH.", flush=True)
-                sys.stdout.flush()
+                logger.warning(f"CRISIS DETECTED: Keyword '{keyword}' found. Risk level: HIGH")
                 break  # One high-risk keyword is enough
-        
-        if not matched_keyword:
-            logger.debug(f"No high-risk keywords matched. Text checked: {text_lower[:100]}")
-            print(f"[CRISIS DETECTION] *** NO MATCH *** No high-risk keywords matched. Risk level remains: {risk_level}", flush=True)
-            print(f"[CRISIS DETECTION] Text was: '{text_lower}'", flush=True)
-            sys.stdout.flush()
         
         # If no high-risk keywords, check medium-risk
         if risk_level != "HIGH":
@@ -329,11 +315,9 @@ class AIService:
                         "ai_enhanced": True
                     }
             except Exception as e:
-                logger.warning(f"TELUS AI enhancement failed, using keyword-based detection: {e}")
-                print(f"[CRISIS DETECTION] TELUS AI failed: {e}. Using keyword-based risk_level: {risk_level}")
+                logger.warning(f"TELUS AI enhancement unavailable: {e}")
         
-        # Final return - log what we're returning
-        print(f"[CRISIS DETECTION] Final return - risk_level: {risk_level}, requires_attention: {risk_level == 'HIGH'}")
+        # Return crisis analysis results
         return {
             "risk_level": risk_level,
             "indicators": indicators,

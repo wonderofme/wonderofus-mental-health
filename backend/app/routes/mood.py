@@ -26,51 +26,35 @@ class MoodHistoryRequest(BaseModel):
 @router.post("/analyze")
 async def analyze_mood(request: MoodAnalysisRequest):
     """
-    Analyze mood from text input
+    Analyze mood from text input using AI models.
     
-    Returns sentiment, emotions, and mood score
+    This endpoint performs:
+    1. Sentiment analysis (positive/negative/neutral)
+    2. Multi-emotion detection (joy, sadness, anxiety, anger, fear, etc.)
+    3. Mood score calculation (0-10 scale)
+    4. Crisis indicator detection
+    5. Personalized recommendations (with TELUS AI Factory enhancement)
+    
+    Returns:
+        MoodAnalysisResponse with sentiment, emotions, mood score,
+        crisis check results, and personalized recommendations.
     """
-    import sys
-    print("\n" + "="*80, flush=True)
-    print("="*80, flush=True)
-    print("*** /api/mood/analyze ENDPOINT CALLED ***", flush=True)
-    print(f"*** Text: '{request.text}' ***", flush=True)
-    print("="*80, flush=True)
-    print("="*80 + "\n", flush=True)
-    sys.stdout.flush()
     try:
-        # Perform AI analysis
-        print(f"[ROUTE] Calling analyze_mood...", flush=True)
+        # Step 1: Perform AI-powered mood analysis
+        logger.info(f"Analyzing mood for user: {request.user_id}")
         mood_analysis = ai_service.analyze_mood(request.text)
-        print(f"[ROUTE] analyze_mood complete", flush=True)
         mood_analysis["text"] = request.text
         
-        # Save to history
+        # Step 2: Save to user's mood history
         mood_service.save_mood_entry(request.user_id, mood_analysis)
         
-        # Check for crisis indicators
-        print(f"[ROUTE] About to call detect_crisis_indicators with text: '{request.text}'")
+        # Step 3: Check for crisis indicators (safety-first approach)
         crisis_check = ai_service.detect_crisis_indicators(request.text, mood_analysis)
-        print(f"[ROUTE] Crisis check returned!")
-        print(f"[ROUTE]   risk_level: {crisis_check.get('risk_level')}")
-        print(f"[ROUTE]   requires_attention: {crisis_check.get('requires_immediate_attention')}")
-        print(f"[ROUTE]   indicators: {crisis_check.get('indicators')}")
         
-        # Get recommendations - CRISIS FIRST, then wellness
-        # If crisis detected, prioritize crisis resources and professional help
+        # Step 4: Determine if crisis response is needed
         is_crisis = crisis_check.get("requires_immediate_attention") or crisis_check.get("risk_level") in ["HIGH", "CRITICAL"]
         
-        # DEBUG: Print to console to verify crisis detection
-        print(f"\n{'='*60}")
-        print(f"CRISIS CHECK RESULT:")
-        print(f"  Text: {request.text[:80]}...")
-        print(f"  Risk Level: {crisis_check.get('risk_level')}")
-        print(f"  Requires Attention: {crisis_check.get('requires_immediate_attention')}")
-        print(f"  is_crisis: {is_crisis}")
-        print(f"  Indicators: {crisis_check.get('indicators')}")
-        print(f"{'='*60}\n")
-        
-        # Log for debugging
+        # Log crisis detection for monitoring
         if is_crisis:
             logger.warning(f"CRISIS DETECTED for user {request.user_id}. Risk level: {crisis_check.get('risk_level')}. Showing crisis recommendations only.")
         else:
