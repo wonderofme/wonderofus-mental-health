@@ -49,6 +49,17 @@ class AIService:
         Models are loaded on-demand to reduce memory usage.
         Models run locally - no data sent to external services.
         """
+        import os
+        
+        # Check if we should disable local models (for free tier memory constraints)
+        self.use_local_models = os.getenv("USE_LOCAL_MODELS", "true").lower() == "true"
+        
+        if not self.use_local_models:
+            logger.info("Local models disabled - using Gemini API only (memory optimized for free tier)")
+            self._sentiment_analyzer = None
+            self._emotion_analyzer = None
+            return
+        
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         logger.info(f"Using device: {self.device}")
         
@@ -64,6 +75,9 @@ class AIService:
     @property
     def sentiment_analyzer(self):
         """Lazy load sentiment analyzer on first use"""
+        if not self.use_local_models:
+            return None  # Disabled for memory optimization
+        
         if self._sentiment_analyzer is None:
             try:
                 logger.info("Loading sentiment analysis model...")
@@ -82,6 +96,9 @@ class AIService:
     @property
     def emotion_analyzer(self):
         """Lazy load emotion analyzer on first use"""
+        if not self.use_local_models:
+            return None  # Disabled for memory optimization
+        
         if self._emotion_analyzer is None:
             try:
                 logger.info("Loading emotion detection model...")
@@ -107,6 +124,10 @@ class AIService:
         Returns:
             Dictionary with sentiment label and score
         """
+        # If local models disabled, use Gemini API
+        if not self.use_local_models:
+            return self._analyze_sentiment_with_gemini(text)
+        
         if not self.sentiment_analyzer:
             return {
                 "label": "NEUTRAL",
@@ -150,6 +171,10 @@ class AIService:
         Returns:
             Dictionary mapping emotions to confidence scores
         """
+        # If local models disabled, use Gemini API
+        if not self.use_local_models:
+            return self._detect_emotions_with_gemini(text)
+        
         if not self.emotion_analyzer:
             return {
                 "neutral": 1.0,
@@ -172,6 +197,68 @@ class AIService:
                 "neutral": 1.0,
                 "error": str(e)
             }
+    
+    def _analyze_sentiment_with_gemini(self, text: str) -> Dict[str, Any]:
+        """Use Gemini API for sentiment analysis when local models disabled"""
+        try:
+            telus_service = get_telus_ai_service()
+            if telus_service and telus_service.gemini_available and telus_service.gemini_model:
+                prompt = f"""Analyze the sentiment of this text. Respond with only one word: POSITIVE, NEGATIVE, or NEUTRAL, followed by a confidence score 0.0-1.0.
+
+Text: "{text}"
+
+Format: SENTIMENT|SCORE"""
+                
+                response = telus_service.gemini_model.generate_content(prompt)
+                result = response.text.strip().split('|')
+                
+                if len(result) == 2:
+                    sentiment = result[0].strip().upper()
+                    score = float(result[1].strip())
+                    
+                    # Normalize
+                    if 'POSITIVE' in sentiment or 'POS' in sentiment:
+                        label = "POSITIVE"
+                    elif 'NEGATIVE' in sentiment or 'NEG' in sentiment:
+                        label = "NEGATIVE"
+                    else:
+                        label = "NEUTRAL"
+                    
+                    return {"label": label, "score": score}
+        except Exception as e:
+            logger.warning(f"Gemini sentiment analysis failed: {e}")
+        
+        # Fallback
+        return {"label": "NEUTRAL", "score": 0.5}
+    
+    def _detect_emotions_with_gemini(self, text: str) -> Dict[str, float]:
+        """Use Gemini API for emotion detection when local models disabled"""
+        try:
+            telus_service = get_telus_ai_service()
+            if telus_service and telus_service.gemini_available and telus_service.gemini_model:
+                prompt = f"""Analyze the emotions in this text. Identify the top 3 emotions and their confidence scores (0.0-1.0).
+
+Text: "{text}"
+
+Respond with format: emotion1:score1,emotion2:score2,emotion3:score3
+Emotions to consider: joy, sadness, anger, fear, surprise, disgust, neutral"""
+                
+                response = telus_service.gemini_model.generate_content(prompt)
+                result_text = response.text.strip()
+                
+                emotions = {}
+                for pair in result_text.split(','):
+                    if ':' in pair:
+                        emotion, score = pair.split(':')
+                        emotions[emotion.strip().lower()] = float(score.strip())
+                
+                if emotions:
+                    return emotions
+        except Exception as e:
+            logger.warning(f"Gemini emotion detection failed: {e}")
+        
+        # Fallback
+        return {"neutral": 1.0}
     
     def analyze_mood(self, text: str) -> Dict[str, Any]:
         """
