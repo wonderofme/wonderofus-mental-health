@@ -13,30 +13,82 @@ Models Available:
 from openai import OpenAI
 from typing import Dict, List, Any, Optional
 import logging
+import os
+from dotenv import load_dotenv
+
+# Load environment variables early (before service initialization)
+load_dotenv()
+
+# Try to import Gemini, but make it optional
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+    genai = None
 
 logger = logging.getLogger(__name__)
 
 
 class TELUSAIService:
     """
-    Service for TELUS AI Factory model integration.
+    AI Service for mental health recommendations and analysis.
     
-    Uses OpenAI-compatible API to access TELUS AI Factory models.
+    Primary: Google Gemini API (when GEMINI_API_KEY is set)
+    Fallback: TELUS AI Factory models (currently deactivated)
     """
     
     def __init__(self):
-        """Initialize TELUS AI Factory clients"""
+        """Initialize Gemini (primary) and TELUS AI Factory clients (fallback)"""
         # Gemma-3-27b client (General AI - best default)
+        # Read from environment variables, fallback to hardcoded values for backward compatibility
+        gemma_base_url = os.getenv(
+            "TELUS_AI_GEMMA_BASE_URL",
+            "https://gemma-3-27b-3ca9s.paas.ai.telus.com/v1"
+        )
+        gemma_api_key = os.getenv(
+            "TELUS_AI_GEMMA_API_KEY",
+            "dc8704d41888afb2b889a8ebac81d12f"
+        )
+        
         self.gemma_client = OpenAI(
-            base_url="https://gemma-3-27b-3ca9s.paas.ai.telus.com/v1",
-            api_key="dc8704d41888afb2b889a8ebac81d12f"
+            base_url=gemma_base_url,
+            api_key=gemma_api_key
         )
         
         # DeepSeekV32 client (Reasoning and complex logic)
-        self.deepseek_client = OpenAI(
-            base_url="https://deepseekv32-3ca9s.paas.ai.telus.com/v1",
-            api_key="a12a7d3705b12aeb46eb4cc8d77f5446"
+        deepseek_base_url = os.getenv(
+            "TELUS_AI_DEEPSEEK_BASE_URL",
+            "https://deepseekv32-3ca9s.paas.ai.telus.com/v1"
         )
+        deepseek_api_key = os.getenv(
+            "TELUS_AI_DEEPSEEK_API_KEY",
+            "a12a7d3705b12aeb46eb4cc8d77f5446"
+        )
+        
+        self.deepseek_client = OpenAI(
+            base_url=deepseek_base_url,
+            api_key=deepseek_api_key
+        )
+        
+        # Initialize Gemini as fallback
+        self.gemini_available = False
+        self.gemini_model = None
+        if GEMINI_AVAILABLE:
+            gemini_api_key = os.getenv("GEMINI_API_KEY")
+            if gemini_api_key:
+                try:
+                    genai.configure(api_key=gemini_api_key)
+                    # Use gemini-2.5-flash (fast, free tier friendly) or gemini-2.5-pro (more capable)
+                    self.gemini_model = genai.GenerativeModel('gemini-2.5-flash')
+                    self.gemini_available = True
+                    logger.info("Gemini API configured successfully as primary AI service")
+                except Exception as e:
+                    logger.warning(f"Failed to configure Gemini: {e}")
+            else:
+                logger.info("Gemini API key not found, will use fallback responses")
+        else:
+            logger.info("Gemini library not installed, will use fallback responses")
     
     def generate_personalized_recommendation(
         self,
@@ -120,14 +172,35 @@ Provide a brief (2-3 sentences), supportive, and actionable recommendation that 
 
 Recommendation:"""
 
-            response = self.gemma_client.completions.create(
-                model="google/gemma-3-27b-it",  # Model name from TELUS documentation
-                prompt=prompt,
-                max_tokens=200,
-                temperature=0.7
-            )
+            # Use Gemini as primary, TELUS AI as fallback (since TELUS AI is deactivated)
+            recommendation_text = None
             
-            recommendation_text = response.choices[0].text.strip()
+            # Try Gemini first (primary)
+            if self.gemini_available and self.gemini_model:
+                try:
+                    response = self.gemini_model.generate_content(prompt)
+                    recommendation_text = response.text.strip()
+                    logger.info("Successfully used Gemini for recommendation")
+                except Exception as gemini_error:
+                    logger.warning(f"Gemini failed: {gemini_error}. Trying TELUS AI fallback...")
+            
+            # Fallback to TELUS AI if Gemini not available or failed
+            if not recommendation_text:
+                try:
+                    response = self.gemma_client.completions.create(
+                        model="google/gemma-3-27b-it",  # Model name from TELUS documentation
+                        prompt=prompt,
+                        max_tokens=200,
+                        temperature=0.7
+                    )
+                    recommendation_text = response.choices[0].text.strip()
+                    logger.info("Used TELUS AI Gemma as fallback")
+                except Exception as e:
+                    logger.warning(f"TELUS AI Gemma also failed: {e}")
+            
+            # If still no recommendation, use default
+            if not recommendation_text:
+                raise Exception("All AI services failed, using default recommendation")
             
             # Determine priority based on crisis status and mood score
             if is_crisis:
@@ -211,14 +284,35 @@ RISK_LEVEL: [level]
 REASONING: [explanation]
 INDICATORS: [list of key indicators]"""
 
-            response = self.deepseek_client.completions.create(
-                model="deepseek-ai/DeepSeek-V3",  # Model name for deepseekv32 endpoint
-                prompt=prompt,
-                max_tokens=300,
-                temperature=0.3  # Lower temperature for more consistent reasoning
-            )
+            # Use Gemini as primary, TELUS AI as fallback (since TELUS AI is deactivated)
+            reasoning_text = None
             
-            reasoning_text = response.choices[0].text.strip()
+            # Try Gemini first (primary)
+            if self.gemini_available and self.gemini_model:
+                try:
+                    response = self.gemini_model.generate_content(prompt)
+                    reasoning_text = response.text.strip()
+                    logger.info("Successfully used Gemini for crisis reasoning")
+                except Exception as gemini_error:
+                    logger.warning(f"Gemini failed: {gemini_error}. Trying TELUS AI fallback...")
+            
+            # Fallback to TELUS AI if Gemini not available or failed
+            if not reasoning_text:
+                try:
+                    response = self.deepseek_client.completions.create(
+                        model="deepseek-ai/DeepSeek-V3",  # Model name for deepseekv32 endpoint
+                        prompt=prompt,
+                        max_tokens=300,
+                        temperature=0.3  # Lower temperature for more consistent reasoning
+                    )
+                    reasoning_text = response.choices[0].text.strip()
+                    logger.info("Used TELUS AI DeepSeek as fallback")
+                except Exception as e:
+                    logger.warning(f"TELUS AI DeepSeek also failed: {e}")
+            
+            # If still no reasoning, use default
+            if not reasoning_text:
+                raise Exception("All AI services failed, using keyword-based detection")
             
             # Parse response
             risk_level = keyword_risk_level  # Default to keyword-based
@@ -292,14 +386,36 @@ Provide a supportive, human-readable insight that helps the user understand thei
 
 Insight:"""
 
-            response = self.gemma_client.completions.create(
-                model="google/gemma-3-27b-it",  # Model name from TELUS documentation
-                prompt=prompt,
-                max_tokens=150,
-                temperature=0.7
-            )
+            # Use Gemini as primary, TELUS AI as fallback (since TELUS AI is deactivated)
+            insight = None
             
-            insight = response.choices[0].text.strip()
+            # Try Gemini first (primary)
+            if self.gemini_available and self.gemini_model:
+                try:
+                    response = self.gemini_model.generate_content(prompt)
+                    insight = response.text.strip()
+                    logger.info("Successfully used Gemini for pattern insights")
+                except Exception as gemini_error:
+                    logger.warning(f"Gemini failed: {gemini_error}. Trying TELUS AI fallback...")
+            
+            # Fallback to TELUS AI if Gemini not available or failed
+            if not insight:
+                try:
+                    response = self.gemma_client.completions.create(
+                        model="google/gemma-3-27b-it",  # Model name from TELUS documentation
+                        prompt=prompt,
+                        max_tokens=150,
+                        temperature=0.7
+                    )
+                    insight = response.choices[0].text.strip()
+                    logger.info("Used TELUS AI Gemma as fallback")
+                except Exception as telus_error:
+                    logger.warning(f"TELUS AI Gemma also failed: {telus_error}")
+            
+            # If still no insight, use default fallback
+            if not insight:
+                raise Exception("All AI services failed, using default insight")
+            
             return insight
             
         except Exception as e:
@@ -315,4 +431,6 @@ Insight:"""
 
 # Global TELUS AI service instance
 telus_ai_service = TELUSAIService()
+
+
 

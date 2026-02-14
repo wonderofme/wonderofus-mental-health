@@ -24,6 +24,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.routes import mood, insights, crisis, dev
 import logging
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file (if it exists)
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -66,13 +71,10 @@ app = FastAPI(
 )
 
 # CORS middleware for frontend connection
+# Allow all origins for hackathon deployment (can be restricted in production)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=["*"],  # Allows all origins (Vercel, localhost, etc.)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

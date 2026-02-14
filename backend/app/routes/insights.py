@@ -118,3 +118,5 @@ async def get_recommendations(user_id: str = "default_user"):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating recommendations: {str(e)}")
 
+
+

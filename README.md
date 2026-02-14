@@ -66,23 +66,15 @@ Beautiful visualizations showing mood trends, patterns, and insights
 ### ✅ Personalized Recommendations
 AI-generated wellness strategies based on individual mood patterns
 
-### ✅ Face Scanning Mood Detection
-Real-time emotion detection from webcam or uploaded images
-
-### ✅ TELUS AI Factory Integration
-Enhanced AI capabilities using TELUS AI Factory models:
-- **gemma-3-27b**: Personalized empathetic recommendations
-- **deepseekv32**: Advanced crisis detection reasoning
-
 ---
 
 ## 🏗️ Tech Stack
 
 | Category | Technology |
 |----------|-----------|
-| **Frontend** | Next.js 14, React, TypeScript, Tailwind CSS, face-api.js |
+| **Frontend** | Next.js 14, React, TypeScript, Tailwind CSS |
 | **Backend** | Python 3.10+, FastAPI, Uvicorn |
-| **AI/ML** | Hugging Face Transformers, PyTorch, TELUS AI Factory (gemma-3-27b, deepseekv32) |
+| **AI/ML** | Hugging Face Transformers, PyTorch |
 | **Data Visualization** | Recharts |
 | **Architecture** | RESTful API, Component-based UI |
 
@@ -253,9 +245,6 @@ The application includes a demo data seeder that creates 14 days of realistic mo
 
 **To use**: Click "Load Demo Data for Presentation" on the Dashboard tab.
 
-### Sample Messages
-The application includes a "Sample Messages" feature with pre-written test prompts to demonstrate different AI capabilities (positive, negative, crisis, mixed emotions). Click the "Sample Messages" button in the Mood Analyzer to access them.
-
 ---
 
 ## 🚧 Future Roadmap
@@ -265,8 +254,6 @@ The application includes a "Sample Messages" feature with pre-written test promp
 - Mood tracking dashboard
 - Basic pattern recognition
 - Crisis detection
-- TELUS AI Factory integration (gemma-3-27b, deepseekv32)
-- Face scanning mood detection
 
 ### Phase 2 (Post-Hackathon)
 - Voice input analysis

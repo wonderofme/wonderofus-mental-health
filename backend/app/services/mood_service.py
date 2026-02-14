@@ -198,3 +198,5 @@ class MoodService:
 # Global mood service instance
 mood_service = MoodService()
 
+
+
