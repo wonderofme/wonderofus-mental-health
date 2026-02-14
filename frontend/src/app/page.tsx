@@ -1,12 +1,32 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import MoodAnalyzer from '@/components/MoodAnalyzer'
 import MoodDashboard from '@/components/MoodDashboard'
 import CrisisResources from '@/components/CrisisResources'
+import { moodAPI } from '@/services/api'
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'analyze' | 'dashboard' | 'resources'>('analyze')
+
+  // Wake up Render backend on page load (free tier sleeps after 15min inactivity)
+  useEffect(() => {
+    const wakeUpBackend = async () => {
+      try {
+        // Silent health check to wake up the backend
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/health`, {
+          method: 'GET',
+          mode: 'no-cors', // Prevents CORS errors, just wakes up the service
+        }).catch(() => {
+          // Ignore errors - this is just to wake up the service
+        })
+      } catch (error) {
+        // Silently fail - this is just a wake-up call
+      }
+    }
+    
+    wakeUpBackend()
+  }, [])
 
   return (
     <main className="min-h-screen betterhelp-bg relative overflow-hidden">
