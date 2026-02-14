@@ -4,7 +4,7 @@ python-dotenv==1.0.0
 pydantic>=2.9.0
 sqlalchemy==2.0.23
 transformers==4.35.0
-tokenizers==0.13.3
+tokenizers>=0.14.0,<0.15
 torch>=2.9.0
 scikit-learn>=1.5.0
 pandas>=2.2.0
