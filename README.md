@@ -112,6 +112,16 @@ npm run dev
 
 ---
 
+## 🌐 Live Demo
+
+**Try it now!** The application is deployed and running:
+
+- **🌍 Live Frontend**: [https://wonderofus-mental-health.vercel.app/](https://wonderofus-mental-health.vercel.app/)
+- **🔧 Live Backend API**: [https://wonderofus-mental-health.onrender.com](https://wonderofus-mental-health.onrender.com)
+- **📚 API Documentation**: [https://wonderofus-mental-health.onrender.com/docs](https://wonderofus-mental-health.onrender.com/docs)
+
+---
+
 ## 🧪 Test Prompts
 
 Copy and paste these prompts to test different AI capabilities:
