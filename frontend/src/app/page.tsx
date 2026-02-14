@@ -12,13 +12,18 @@ export default function Home() {
   // Wake up Render backend on page load (free tier sleeps after 15min inactivity)
   useEffect(() => {
     const wakeUpBackend = async () => {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       try {
         // Silent health check to wake up the backend
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/health`, {
+        // This ensures Render service is ready when user makes their first request
+        await fetch(`${apiUrl}/health`, {
           method: 'GET',
-          mode: 'no-cors', // Prevents CORS errors, just wakes up the service
+          headers: {
+            'Content-Type': 'application/json',
+          },
         }).catch(() => {
           // Ignore errors - this is just to wake up the service
+          // If backend is sleeping, it will wake up and be ready for the next request
         })
       } catch (error) {
         // Silently fail - this is just a wake-up call
