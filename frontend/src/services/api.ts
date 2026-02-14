@@ -16,7 +16,8 @@ const api = axios.create({
 // Add request interceptor to log API calls
 api.interceptors.request.use(
   (config) => {
-    console.log('[API] Making request to:', config.baseURL + config.url)
+    const fullUrl = (config.baseURL || '') + (config.url || '')
+    console.log('[API] Making request to:', fullUrl)
     console.log('[API] Request data:', config.data)
     return config
   },
