@@ -52,10 +52,17 @@ class AIService:
         import os
         
         # Check if we should disable local models (for free tier memory constraints)
-        self.use_local_models = os.getenv("USE_LOCAL_MODELS", "true").lower() == "true"
+        use_local_models_env = os.getenv("USE_LOCAL_MODELS", "true")
+        self.use_local_models = use_local_models_env.lower() == "true"
+        
+        logger.info(f"USE_LOCAL_MODELS environment variable: {use_local_models_env}")
+        logger.info(f"Local models enabled: {self.use_local_models}")
         
         if not self.use_local_models:
-            logger.info("Local models disabled - using Gemini API only (memory optimized for free tier)")
+            logger.info("=" * 60)
+            logger.info("MEMORY OPTIMIZATION: Local models DISABLED")
+            logger.info("Using Gemini API only (fits in 512MB free tier)")
+            logger.info("=" * 60)
             self._sentiment_analyzer = None
             self._emotion_analyzer = None
             return
