@@ -52,10 +52,11 @@ class AIService:
         import os
         
         # Check if we should disable local models (for free tier memory constraints)
-        use_local_models_env = os.getenv("USE_LOCAL_MODELS", "true")
-        self.use_local_models = use_local_models_env.lower() == "true"
+        # Default to False (disabled) for free tier to prevent OOM errors
+        use_local_models_env = os.getenv("USE_LOCAL_MODELS", "false")
+        self.use_local_models = use_local_models_env.lower() in ("true", "1", "yes")
         
-        logger.info(f"USE_LOCAL_MODELS environment variable: {use_local_models_env}")
+        logger.info(f"USE_LOCAL_MODELS environment variable: '{use_local_models_env}'")
         logger.info(f"Local models enabled: {self.use_local_models}")
         
         if not self.use_local_models:
