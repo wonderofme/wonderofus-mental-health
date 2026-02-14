@@ -44,37 +44,58 @@ class AIService:
     
     def __init__(self):
         """
-        Initialize AI models.
+        Initialize AI service with lazy model loading.
         
-        Models are loaded from Hugging Face and run locally.
-        No external API calls are made, ensuring data privacy.
+        Models are loaded on-demand to reduce memory usage.
+        Models run locally - no data sent to external services.
         """
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         logger.info(f"Using device: {self.device}")
         
-        # Initialize sentiment analysis pipeline
-        # Model runs locally - no data sent to external services
-        try:
-            self.sentiment_analyzer = pipeline(
-                "sentiment-analysis",
-                model="cardiffnlp/twitter-roberta-base-sentiment-latest",
-                device=0 if self.device == "cuda" else -1
-            )
-        except Exception as e:
-            logger.warning(f"Could not load sentiment model: {e}")
-            self.sentiment_analyzer = None
+        # Lazy loading - models loaded on first use to save memory
+        # This prevents OOM errors on free tier (512MB limit)
+        self._sentiment_analyzer = None
+        self._emotion_analyzer = None
         
-        # Initialize emotion detection pipeline
-        # Model runs locally - no data sent to external services
-        try:
-            self.emotion_analyzer = pipeline(
-                "text-classification",
-                model="j-hartmann/emotion-english-distilroberta-base",
-                device=0 if self.device == "cuda" else -1
-            )
-        except Exception as e:
-            logger.warning(f"Could not load emotion model: {e}")
-            self.emotion_analyzer = None
+        # Force CPU mode to save memory (no CUDA on free tier anyway)
+        torch.set_num_threads(1)  # Limit CPU threads to reduce memory
+        logger.info("AI Service initialized with lazy model loading (memory optimized)")
+    
+    @property
+    def sentiment_analyzer(self):
+        """Lazy load sentiment analyzer on first use"""
+        if self._sentiment_analyzer is None:
+            try:
+                logger.info("Loading sentiment analysis model...")
+                self._sentiment_analyzer = pipeline(
+                    "sentiment-analysis",
+                    model="cardiffnlp/twitter-roberta-base-sentiment-latest",
+                    device=-1,  # Always use CPU to save memory
+                    torch_dtype=torch.float32
+                )
+                logger.info("Sentiment model loaded successfully")
+            except Exception as e:
+                logger.warning(f"Could not load sentiment model: {e}")
+                self._sentiment_analyzer = None
+        return self._sentiment_analyzer
+    
+    @property
+    def emotion_analyzer(self):
+        """Lazy load emotion analyzer on first use"""
+        if self._emotion_analyzer is None:
+            try:
+                logger.info("Loading emotion detection model...")
+                self._emotion_analyzer = pipeline(
+                    "text-classification",
+                    model="j-hartmann/emotion-english-distilroberta-base",
+                    device=-1,  # Always use CPU to save memory
+                    torch_dtype=torch.float32
+                )
+                logger.info("Emotion model loaded successfully")
+            except Exception as e:
+                logger.warning(f"Could not load emotion model: {e}")
+                self._emotion_analyzer = None
+        return self._emotion_analyzer
     
     def analyze_sentiment(self, text: str) -> Dict[str, Any]:
         """
